@@ -106,6 +106,61 @@ def spark_get_ssids_cmd(api_key, net_id, room_id):
     print(bot_response_to_spark.status_code)
     print(table)
 
+
+# Get network device inventory and create a list of MR's with the "guest" tag to a list
+def get_guest_ap_list():
+    """
+    This function uses requests to GET a network's devices and creates a list of MR's
+    with the 'guest_wireless' device tag
+    """
+    # creates the dictionary called net_devices to store key,value pairs
+    serial_list = []
+    result = merakiapi.getnetworkdevices(my_api_key, my_net_id)
+    for row in result:
+        if row == 'errors':
+            return 'errors'
+        else:
+            # iterate through the json response from the GET inventory
+            guest_regex = re.compile('guest_wireless')
+            m = guest_regex.search(str(row['tags']))
+            model = row['model']
+            if model[:2] == 'MR' and m is not None:
+                serial_list.append(row['serial'])
+            else:
+                continue
+    return serial_list
+
+
+# Create a list of MR's with the "guest" tag and count clients on guest ip subnet
+def get_guest_clients_cmd():
+    """ Creates a list of MR's with the 'guest_wireless' tag
+    Counts clients on guest ip subnet
+    """
+    sn_list = get_guest_ap_list()
+    client_count = 0
+    for sn in sn_list:
+        result = merakiapi.getclients(my_api_key, sn, timestamp=1800)
+        for row in result:
+            subnet_regex = re.compile('10.4.17')
+            match = subnet_regex.search(str(row['ip']))
+            if match is not None:
+                client_count += 1
+                table = PrettyTable(["Guest Wireless Clients"])
+                for row in dashboard_response:
+                    client_name = row['description']
+                    table_row = [client_name]
+                    table.add_row(table_row)
+            else:
+                continue
+    msg = "There are {0} users on the guest wireless network".format(str(client_count))
+    payload = {'roomId': str(room_id),
+                'text': str(table)
+                }
+    bot_response_to_spark = requests.post(spark_url, data=json.dumps(payload), headers=spark_header)
+    print(bot_response_to_spark.status_code)
+    print(table)
+
+
 # a simple error msg function
 def spark_err_msg():
     bot_response = {'roomId': str(room_id),
@@ -115,7 +170,7 @@ def spark_err_msg():
     print("Error, exiting...")
 
 # example function sending json to a Tropo API endpoint
-def meraki_rick_roll(number):
+def meraki_rick_roll(number, room_id):
     # the data that will be passed in the POST to Tropo
     post_data = {"token": tropo_voice_token,
                  "number": number
@@ -128,13 +183,13 @@ def meraki_rick_roll(number):
     if tropo_post.status_code == 200:
         print(tropo_post.status_code)
         payload = {'roomId': str(room_id),
-                   'text': 'Success'
+                   'text': "Success"
                    }
         requests.post(spark_url, data=json.dumps(payload), headers=spark_header)
     else:
         print(tropo_post.status_code)
         payload = {'roomId': str(room_id),
-                    'text': 'Something went wrong'
+                    'text': "Something went wrong"
                     }
         requests.post(spark_url, data=json.dumps(payload), headers=spark_header)
 
@@ -170,12 +225,15 @@ def lambda_handler(event, context):
     elif t['text'] == 'Meraki get ssids':
         spark_get_ssids_cmd(my_api_key, my_net_id, spark_room_id)
 
+    elif t['text'] == 'Meraki get guest clients':
+        spark_get_guest_clients_cmd(my_api_key, my_net_id, spark_room_id)
+
     # there's always a Meraki easter egg
     elif str(t['text']).startswith("Meraki rick roll "):
         cmd_split = str(t['text']).split("Meraki rick roll ", 1)
         num_to_dial = cmd_split[1]
         if num_to_dial is not None:
-            meraki_rick_roll(num_to_dial)
+            meraki_rick_roll(num_to_dial, spark_room_id)
         else:
             spark_err_msg()
 
