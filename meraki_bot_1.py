@@ -162,7 +162,7 @@ def spark_get_guest_clients_cmd(api_key, net_id, room_id):
     client_count = 0
     table = PrettyTable(["Description", "IP", "MAC"])
     for sn in sn_list:
-        result = merakiapi.getclients(my_api_key, sn, timestamp=1800)
+        result = merakiapi.getclients(my_api_key, sn, timestamp=900)
         for row in result:
             subnet_regex = re.compile('10.4.17')
             match = subnet_regex.search(str(row['ip']))
@@ -193,9 +193,11 @@ def spark_get_mr_clients_cmd(api_key, net_id, room_id):
     """
     sn_list = get_ap_list(api_key, net_id)
     client_count = 0
+    mr_count = 0
     table = PrettyTable(["Description", "IP", "MAC"])
     for sn in sn_list:
-        result = merakiapi.getclients(my_api_key, sn, timestamp=1800)
+        mr_count += 1
+        result = merakiapi.getclients(my_api_key, sn, timestamp=900)
         for row in result:
             client_count += 1
             client_name = row['description']
@@ -203,7 +205,8 @@ def spark_get_mr_clients_cmd(api_key, net_id, room_id):
             client_mac = row['mac']
             table_row = [client_name, client_ip, client_mac]
             table.add_row(table_row)
-    msg = "There are {0} users on the wireless network".format(str(client_count))
+    msg = "There are {0} users on the wireless network across {1} MR devices".format(str(client_count),
+                                                                                     str(mr_count))
     payload = {'roomId': str(room_id),
                 'text': str(msg)
                 }
