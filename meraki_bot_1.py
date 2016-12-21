@@ -186,7 +186,7 @@ def spark_get_guest_clients_cmd(api_key, net_id, room_id):
     requests.post(spark_url, data=json.dumps(payload2), headers=spark_header)
 
 
-# Create a list of MR's and count clients on guest ip subnet
+# Create a list of MR's and count clients on the guest ip subnet
 def spark_get_mr_clients_cmd(api_key, net_id, room_id):
     """ Creates a list of MR's with the 'guest_wireless' tag
     Counts clients on guest ip subnet
@@ -215,6 +215,35 @@ def spark_get_mr_clients_cmd(api_key, net_id, room_id):
                 }
     requests.post(spark_url, data=json.dumps(payload), headers=spark_header)
     requests.post(spark_url, data=json.dumps(payload2), headers=spark_header)
+
+
+# Create a list of MR's, clients and usage stats, then post the sorted results to the Spark room
+def spark_get_top_talkers_cmd(api_key, net_id, room_id):
+    client_traffic = {}
+    sn_list = get_ap_list(api_key, net_id)
+    table = PrettyTable(["Client", "Usage - kbytes past hour"])
+    for sn in sn_list:
+        result = merakiapi.getclients(api_key, sn, timestamp=3600)
+        for row in result:
+            traf_sum = row['usage']['sent'] + row['usage']['recv']
+            description = row['description'].lower().replace(' ', '_').replace('.', '_')
+            if description not in client_traffic:
+                client_traffic[description] = traf_sum
+            elif description in client_traffic:
+                client_traffic[description] = client_traffic[description] + traf_sum
+            else:
+                continue
+    for row in client_traffic:
+        client_name = row
+        client_usage = client_traffic[row]
+        table_row = [client_name, client_usage]
+        table.add_row(table_row)
+        table.reversesort = True
+    print(str(table.get_string(sortby="Usage - kbytes past hour")))
+    payload = {'roomId': str(room_id),
+                'text': str(table.get_string(sortby="Usage - kbytes past hour"))
+                }
+    requests.post(spark_url, data=json.dumps(payload), headers=spark_header)
 
 
 # a simple error msg function
@@ -269,7 +298,7 @@ def lambda_handler(event, context):
     # the following if statements parse the text of the Spark message and call
     # the appropriate functions based on the "command"
     if t['text'] == 'Meraki get ?':
-        response = 'get [mr clients|guest clients|inventory|networks|ssids]'
+        response = 'get [mr clients|guest clients|top talkers|inventory|networks|ssids]'
         payload = {'roomId': str(room_id),
                    'text': str(response)
                    }
@@ -290,6 +319,9 @@ def lambda_handler(event, context):
 
     elif t['text'] == 'Meraki get guest clients':
         spark_get_guest_clients_cmd(my_api_key, my_net_id, room_id)
+
+    elif t['text'] == 'Meraki get top talkers':
+        spark_get_top_talkers_cmd(my_api_key, my_net_id, room_id)
 
     # there's always a Meraki easter egg
     elif str(t['text']).startswith("Meraki rick roll "):
