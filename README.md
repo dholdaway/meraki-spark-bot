@@ -3,7 +3,7 @@
 A sample Cisco Spark Bot using Spark, Meraki Dashboard, and Tropo API's.
 
 ## Parts list
-  * Using Amazon Web Services (AWS) API Gateway & Lambda
+  * Amazon Web Services (AWS) API Gateway & Lambda
     * See Cory Guynn's nice writeup here: https://github.com/dexterlabora/cmxreceiver-lambda-inline
   * Cisco Spark API
     * developer.ciscospark.com
