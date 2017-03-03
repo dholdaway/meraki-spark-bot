@@ -1,0 +1,95 @@
+{
+	"variables": [],
+	"info": {
+		"name": "Cisco Spark (Bot basic info)",
+		"_postman_id": "e70890c6-3e9a-5653-cce5-91ab0dfd5f30",
+		"description": "Saved Spark API calls for creating a basic bot\n\nGET /webooks to get existing Webhooks\nGET /rooms to get room ID's\nPOST /webooks to create a new Webhook",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "https://api.ciscospark.com/v1/webhooks",
+			"request": {
+				"url": "https://api.ciscospark.com/v1/webhooks",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bot_spark_auth_token}}",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "https://api.ciscospark.com/v1/rooms/",
+			"request": {
+				"url": "https://api.ciscospark.com/v1/rooms/",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bot_spark_auth_token}}",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "https://api.ciscospark.com/v1/webhooks",
+			"request": {
+				"url": "https://api.ciscospark.com/v1/webhooks",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bot_spark_auth_token}}",
+						"description": ""
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\"name\": \"My new Webhook\",\n\"targetUrl\": \"<insert url>\",\n\"resource\" : \"messages\",\n\"event\" : \"created\",\n\"filter\" : \"roomId=<room id>&mentionedPeople=<people id>\"\n}\n"
+				},
+				"description": "Register a Webhook (example POST body provided)\ntriggered by Spark messages matching filter:\nroom id & people id (your bot)\nMore information here: https://developer.ciscospark.com/webhooks-explained.html"
+			},
+			"response": []
+		},
+		{
+			"name": "https://api.ciscospark.com/v1/people?email=my_new_bot@sparkbot.io",
+			"request": {
+				"url": "https://api.ciscospark.com/v1/people?email=your_new_bot@sparkbot.io",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{bot_spark_auth_token}}",
+						"description": ""
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"description": "Use this API endpoint to get your bot's <person id> (for use with webhook registration)"
+			},
+			"response": []
+		}
+	]
+}
